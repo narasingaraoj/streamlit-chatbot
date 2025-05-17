@@ -1,42 +1,41 @@
 import streamlit as st
-st.title("StreamLit ChatBot")
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+
 import os
-os.environ["GOOGLE_API_KEY"]=st.secrets["GOOGLE_API_KEY"]
+os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
+
 # Initialize the LLM
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
 
-# Streamlit page config
+# Set up Streamlit page
 st.set_page_config(page_title="Gemini Chatbot", layout="centered")
-st.title("💬 Gemini Chatbot")
-st.write("Type something to begin chatting with Gemini!")
+st.title("🤖 Gemini Chatbot with Memory")
 
-# Initialize session state for chat history
+# Initialize chat history in session state
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [SystemMessage(content="You are a helpful assistant.")]
+    st.session_state.chat_history = [
+        SystemMessage(content="You are a helpful assistant.")
+    ]
 
-# Display previous messages
+# Display past messages
 for msg in st.session_state.chat_history:
     if isinstance(msg, HumanMessage):
-        with st.chat_message("user"):
-            st.markdown(msg.content)
+        st.chat_message("user").markdown(msg.content)
     elif isinstance(msg, AIMessage):
-        with st.chat_message("assistant"):
-            st.markdown(msg.content)
+        st.chat_message("assistant").markdown(msg.content)
 
 # User input
-if prompt := st.chat_input("Say something..."):
-    # Add user message to history
-    st.session_state.chat_history.append(HumanMessage(content=prompt))
+user_input = st.chat_input("Say something...")
+if user_input:
+    # Append user message
+    st.session_state.chat_history.append(HumanMessage(content=user_input))
+    st.chat_message("user").markdown(user_input)
 
-    # Display user message
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    # Get response from Gemini
+    result = llm.invoke(chat_history)
+    response = result.content
 
-    # Get model response
-    with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            result = llm.invoke(st.session_state.chat_history)
-            st.markdown(result.content)
-            st.session_state.chat_history.append(AIMessage(content=result.content))
+    # Append AI response
+    st.session_state.chat_history.append(AIMessage(content=response))
+    st.chat_message("assistant").markdown(response)
